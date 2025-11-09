@@ -1,6 +1,7 @@
 ﻿// Include the namespaces (code libraries) you need below.
 using System;
 using System.Numerics;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 // The namespace your code is in.
 namespace MohawkGame2D
@@ -11,16 +12,31 @@ namespace MohawkGame2D
     public class Game
     {
         // Place your variables here:
-        Bullet[] bullets = new Bullet[5];
+        Bullet[] bullets = new Bullet[100];
         int bulletIndex = 0;
+        bool playerMoving = false;
+        bool playerGrounded = false;
+        float speedLimit = 500;
+        Vector2 centerScreen = Window.Size / 2.0f;
+
+        Vector2 plrPosition = new Vector2(400 - 20, 100);
+        Vector2 plrSize = new Vector2(40, 60);
+        Vector2 plrVelocity = new Vector2(0, 0);
+
+        Vector2 gravity = new Vector2(0, 800);
+
+        float friction = 0.1f;
+        float elasticity = 0.1f; // added this for the player bouncing off the walls
+
+        bool gameRunning = false;
 
         /// <summary>
         ///     Setup runs once before the game loop begins.
         /// </summary>
         public void Setup()
         {
+            Window.SetTitle("Bullet Spawning");
             Window.SetSize(800, 600);
-            Window.SetTitle("Survival");
         }
 
         /// <summary>
@@ -28,11 +44,22 @@ namespace MohawkGame2D
         /// </summary>
         public void Update()
         {
-            Window.ClearBackground(new Color("#F0F0F0"));
-            DrawMajorGridLines();
-            DrawMinorGridLines();
+            Window.ClearBackground(Color.White);
 
-            if (Input.IsMouseButtonPressed(MouseInput.Left)) SpawnBullet();
+            ProcessInputs();
+            if (gameRunning)
+            {
+                ProcessPlayerGravity();
+                ProcessPlayerCollisions();
+                ProcessPlayerMovement();
+
+                if (Input.IsMouseButtonPressed(MouseInput.Left))
+                {
+                    SpawnBullet(); //test
+                }
+
+                DrawPlayer();
+            }
 
             // call update on all bullets
             for (int i = 0; i < bullets.Length; i++)
@@ -42,39 +69,108 @@ namespace MohawkGame2D
 
                 bullets[i].Update();
             }
+
+
         }
-        void DrawMajorGridLines()
+        void ProcessInputs()
+        {
+            if (Input.IsKeyboardKeyPressed(KeyboardInput.Escape))
+            {
+                // when reset button is pressed, move rectangle back to initial position
+                plrPosition = centerScreen;
+                plrVelocity = new Vector2(0, 0);
+                gameRunning = false;
+            }
+            if (Input.IsKeyboardKeyPressed(KeyboardInput.Enter))
+            {
+                gameRunning = true;
+            }
+        }
+        void ProcessPlayerGravity()
+        {
+            plrVelocity += gravity * Time.DeltaTime; // velocity changes because of gravity, position changes because of velocity
+            plrPosition += plrVelocity * Time.DeltaTime;
+        }
+        void DrawPlayer()
         {
             Draw.LineSize = 2;
-            Draw.LineColor = Color.LightGray;
+            Draw.LineColor = Color.Black;
+            Draw.FillColor = Color.White;
+            Draw.Rectangle(plrPosition, plrSize);
+        }
+        void ProcessPlayerMovement()
+        {
+            bool isPlayerMovingLeft = (Input.IsKeyboardKeyDown(KeyboardInput.A)) || (Input.IsKeyboardKeyDown(KeyboardInput.Left));
+            bool isPlayerMovingRight = (Input.IsKeyboardKeyDown(KeyboardInput.D)) || (Input.IsKeyboardKeyDown(KeyboardInput.Right));
+            bool isPlayerMoving = false;
 
-            // draw vertical gridlines
-            for (int x = 0; x < Window.Width; x += 100)
+            if (isPlayerMovingLeft && isPlayerMovingRight)
             {
-                Draw.Line(x, 0, x, Window.Height);
+                isPlayerMoving = false;
+            }
+            
+            if (isPlayerMovingLeft == true)
+            {
+                isPlayerMoving = true;
+                plrVelocity.X -= 500.0f;
+            }
+            if (isPlayerMovingRight == true)
+            {
+                isPlayerMoving = true;
+                plrVelocity.X += 500.0f;
+            }
+            if (!isPlayerMoving)
+            {
+                plrVelocity.X *= 0.8f;
             }
 
-            // draw horizontal gridlines
-            for (int y = 0; y < Window.Height; y += 100)
+            if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && playerGrounded == true) plrVelocity.Y -= 500.0f; // jumping
+
+            // player speed limit
+            if (plrVelocity.X > speedLimit)
             {
-                Draw.Line(0, y, Window.Width, y);
+                plrVelocity.X = speedLimit;
+            }
+            if (plrVelocity.X < -speedLimit)
+            {
+                plrVelocity.X = -speedLimit;
             }
         }
-        void DrawMinorGridLines()
+        void ProcessPlayerCollisions()
         {
-            Draw.LineSize = 1;
-            Draw.LineColor = Color.LightGray;
+            float topEdge = plrPosition.Y;
+            float bottomEdge = plrPosition.Y + plrSize.Y;
+            float leftEdge = plrPosition.X;
+            float rightEdge = plrPosition.X + plrSize.X;
 
-            // draw vertical gridlines
-            for (int x = 0; x < Window.Width; x += 20)
+            if (topEdge < 0)
             {
-                Draw.Line(x, 0, x, Window.Height);
+                plrVelocity.Y *= -1 * friction;
+                plrPosition.Y = 0;
             }
 
-            // draw horizontal gridlines
-            for (int y = 0; y < Window.Height; y += 20)
+            if (bottomEdge > Window.Height)
             {
-                Draw.Line(0, y, Window.Width, y);
+                playerGrounded = true;
+                plrVelocity.Y *= 0;
+                plrPosition.Y = Window.Height - plrSize.Y;
+            }
+
+            if (leftEdge < 0)
+            {
+                plrVelocity.X *= -1 * elasticity;
+                plrPosition.X = 0;
+            }
+
+            if (rightEdge > Window.Width)
+            {
+                plrVelocity.X *= -1 * elasticity;
+                plrPosition.X = Window.Width - plrSize.X;
+            }
+
+            if (bottomEdge < Window.Height)
+            {
+                playerGrounded = false;
             }
         }
         void SpawnBullet()
@@ -84,8 +180,6 @@ namespace MohawkGame2D
 
             // when mouse button is pressed, spawn a bullet!
             Bullet bullet = new Bullet();
-
-            Vector2 centerScreen = Window.Size / 2.0f;
 
             bullet.position = centerScreen;
 
@@ -98,7 +192,4 @@ namespace MohawkGame2D
             if (bulletIndex >= bullets.Length) bulletIndex = 0;
         }
     }
-
-
-
 }
