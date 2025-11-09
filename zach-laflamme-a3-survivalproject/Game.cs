@@ -213,7 +213,6 @@ namespace MohawkGame2D
                 plrVelocity.X *= -0.5f * elasticity;
                 plrPosition.X = 0;
             }
-            else isWallJumpReady = false;
 
             if (rightEdge > Window.Width)
             {
@@ -221,11 +220,20 @@ namespace MohawkGame2D
                 plrVelocity.X *= -0.5f * elasticity;
                 plrPosition.X = Window.Width - plrSize.X;
             }
-            else isWallJumpReady = false;
 
             if (bottomEdge < Window.Height)
             {
                 playerGrounded = false;
+            }
+
+            // i have no idea what kind of sorcery is happening here but it works 
+            if (leftEdge > 0 + 20 && leftEdge < centerScreen.X - 50) //walljump parameters with a 20 pixel buffer
+            {
+                isWallJumpReady = false;
+            }
+            else if (rightEdge < Window.Width - 20 && rightEdge > centerScreen.X + 50) //walljump parameters with a 20 pixel buffer
+            {
+                isWallJumpReady = false;
             }
         }
         void SpawnBullet()
