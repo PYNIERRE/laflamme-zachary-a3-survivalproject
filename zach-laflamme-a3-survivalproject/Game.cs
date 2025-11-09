@@ -16,18 +16,20 @@ namespace MohawkGame2D
         int bulletIndex = 0;
         bool playerMoving = false;
         bool playerGrounded = false;
-        bool isDoubleJumpReady = false;
-        float speedLimit = 500;
+        bool isPlayerJumping = false;
+        bool isWallJumpReady = false;
+        float speedLimit = 600;
         Vector2 centerScreen = Window.Size / 2.0f;
 
         Vector2 plrPosition = new Vector2(400 - 20, 100);
         Vector2 plrSize = new Vector2(40, 60);
         Vector2 plrVelocity = new Vector2(0, 0);
+        Vector2 plrAcceleration = new Vector2(0, 0);
 
-        Vector2 gravity = new Vector2(0, 800);
+        Vector2 gravity = new Vector2(0, 1250);
 
         float friction = 0.1f;
-        float elasticity = 0.1f; // added this for the player bouncing off the walls
+        float elasticity = 0.3f; // added this for the player bouncing off the walls
 
         bool gameRunning = false;
 
@@ -103,8 +105,30 @@ namespace MohawkGame2D
         {
             bool isPlayerMovingLeft = (Input.IsKeyboardKeyDown(KeyboardInput.A)) || (Input.IsKeyboardKeyDown(KeyboardInput.Left));
             bool isPlayerMovingRight = (Input.IsKeyboardKeyDown(KeyboardInput.D)) || (Input.IsKeyboardKeyDown(KeyboardInput.Right));
+            bool isPlayerMovingDown = (Input.IsKeyboardKeyDown(KeyboardInput.S)) || (Input.IsKeyboardKeyDown(KeyboardInput.Down));
             bool isPlayerMoving = false;
+            float movementSpeed = 1;
 
+            // vertical accelleration for jumping
+            if (isPlayerJumping == true)
+            {
+                for (int i = 5; i > 0; i--)
+                {
+                    plrAcceleration.Y = i * 100;
+                }
+            }
+
+            if (isPlayerMoving == true)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    plrAcceleration.X = i * 50;
+                }
+            }
+
+
+
+            // directional movement
             if (isPlayerMovingLeft && isPlayerMovingRight)
             {
                 isPlayerMoving = false;
@@ -113,22 +137,43 @@ namespace MohawkGame2D
             if (isPlayerMovingLeft == true)
             {
                 isPlayerMoving = true;
-                plrVelocity.X -= 500.0f;
+                plrVelocity.X -= plrAcceleration.X + 100.0f;
             }
+
             if (isPlayerMovingRight == true)
             {
                 isPlayerMoving = true;
-                plrVelocity.X += 500.0f;
+                plrVelocity.X += plrAcceleration.X + 100.0f;
             }
+
+            if (isPlayerMovingDown == true)
+            {
+                isPlayerMoving = true;
+                if (plrVelocity.Y > 100.0f)
+                {
+                    plrVelocity.Y = 80.0f;
+                }
+                plrVelocity.Y += 600.0f;
+            }
+
             if (!isPlayerMoving)
             {
-                plrVelocity.X *= 0.8f;
+                plrVelocity.X *= 0.9f;
+            }
+
+            // jumping
+            if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && isWallJumpReady == true && playerGrounded == false)
+            {
+                isWallJumpReady = false;
+                plrVelocity.Y -= 400.0f; // jumping... again
+                plrVelocity.X *= 2f;
             }
 
             if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && playerGrounded == true)
             {
-                plrVelocity.Y -= 500.0f; // jumping
-                isDoubleJumpReady = true;
+                playerGrounded = false;
+                isPlayerJumping = true;
+                plrVelocity.Y -= (500.0f + plrAcceleration.Y); // jumping
             }
 
             // player speed limit
@@ -157,22 +202,26 @@ namespace MohawkGame2D
             if (bottomEdge > Window.Height)
             {
                 playerGrounded = true;
-                isDoubleJumpReady = false;
+                isWallJumpReady = false;
                 plrVelocity.Y *= 0;
                 plrPosition.Y = Window.Height - plrSize.Y;
             }
 
             if (leftEdge < 0)
             {
-                plrVelocity.X *= -1 * elasticity;
+                isWallJumpReady = true;
+                plrVelocity.X *= -0.5f * elasticity;
                 plrPosition.X = 0;
             }
+            else isWallJumpReady = false;
 
             if (rightEdge > Window.Width)
             {
-                plrVelocity.X *= -1 * elasticity;
+                isWallJumpReady = true;
+                plrVelocity.X *= -0.5f * elasticity;
                 plrPosition.X = Window.Width - plrSize.X;
             }
+            else isWallJumpReady = false;
 
             if (bottomEdge < Window.Height)
             {
