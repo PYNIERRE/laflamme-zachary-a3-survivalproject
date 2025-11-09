@@ -16,6 +16,7 @@ namespace MohawkGame2D
         int bulletIndex = 0;
         bool playerMoving = false;
         bool playerGrounded = false;
+        bool isDoubleJumpReady = false;
         float speedLimit = 500;
         Vector2 centerScreen = Window.Size / 2.0f;
 
@@ -124,7 +125,11 @@ namespace MohawkGame2D
                 plrVelocity.X *= 0.8f;
             }
 
-            if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && playerGrounded == true) plrVelocity.Y -= 500.0f; // jumping
+            if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && playerGrounded == true)
+            {
+                plrVelocity.Y -= 500.0f; // jumping
+                isDoubleJumpReady = true;
+            }
 
             // player speed limit
             if (plrVelocity.X > speedLimit)
@@ -152,6 +157,7 @@ namespace MohawkGame2D
             if (bottomEdge > Window.Height)
             {
                 playerGrounded = true;
+                isDoubleJumpReady = false;
                 plrVelocity.Y *= 0;
                 plrPosition.Y = Window.Height - plrSize.Y;
             }
