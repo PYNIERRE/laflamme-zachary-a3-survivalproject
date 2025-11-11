@@ -40,7 +40,8 @@ namespace MohawkGame2D
         int plrR = 255;
         int plrG = 255;
         int plrB = 255;
-        Color playerColour = new Color(255, 255, 255); // initial colour
+        Color playerColour = new Color(255, 255, 255); // initial colour\
+        string plrFace = "0_0";
 
         Vector2 gravity = new Vector2(0, 1400);
 
@@ -124,7 +125,7 @@ namespace MohawkGame2D
             Vector2 faceoffset = new Vector2(-4, -13); // face position
             faceoffset -= plrVelocity / 50; // faceoffset 
 
-            Text.Draw("o_o", plrPosition - faceoffset);
+            Text.Draw(plrFace, plrPosition - faceoffset);
             Text.Size = 25;
 
             if (plrR < 0) plrR = 0;
@@ -164,6 +165,7 @@ namespace MohawkGame2D
                 }
             }
 
+            // horizontal accelleration for moving. balances out because of the speed limit
             if (isPlayerMoving == true)
             {
                 for (int i = 0; i < 8; i++)
@@ -184,12 +186,20 @@ namespace MohawkGame2D
             {
                 isPlayerMoving = true;
                 plrVelocity.X -= plrAcceleration.X + 100.0f * playerSpeed;
+                plrFace = "<_<";
             }
 
             if (isPlayerMovingRight == true)
             {
                 isPlayerMoving = true;
                 plrVelocity.X += plrAcceleration.X + 100.0f * playerSpeed;
+                plrFace = ">_>";
+            }
+
+            if (!isPlayerMoving)
+            {
+                plrFace = "0_0";
+                plrVelocity.X *= 0.9f;
             }
 
             if (isPlayerMovingDown == true)
@@ -203,22 +213,18 @@ namespace MohawkGame2D
                     plrVelocity.Y *= 1;
                 }
                 plrVelocity.Y += 50f;
+                plrFace = ">_<";
             }
 
             if (isPlayerMovingSlow == true)
             {
                 playerSpeed = 0.5f;
                 plrVelocity.X *= 0.75f;
+                plrFace = "ono";
             }
             if (isPlayerMovingSlow == false)
             {
                 playerSpeed = 1f;
-            }
-
-
-            if (!isPlayerMoving)
-            {
-                plrVelocity.X *= 0.9f;
             }
 
             // walljumping
