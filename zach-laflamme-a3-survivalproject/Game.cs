@@ -33,6 +33,7 @@ namespace MohawkGame2D
 
         Vector2 plrSize = new Vector2(50, 50);
         float hitboxSize = 12.5f;
+        Vector2 hitboxOffset = new Vector2(0,0);
         Vector2 plrPosition = new Vector2(400 - 25, Window.Height - 80);
         Vector2 plrVelocity = new Vector2(0, 0);
         Vector2 plrAcceleration = new Vector2(0, 0);
@@ -45,7 +46,7 @@ namespace MohawkGame2D
         float faceTransparency = 1.0f;
         float hitboxTransparency = 0.2f;
 
-        Vector2 gravity = new Vector2(0, 1450);
+        Vector2 gravity = new Vector2(0, 1500);
 
         float friction = 0.3f;
         float elasticity = 0f; // added this for the player bouncing off the walls, however it will not be needed
@@ -58,7 +59,7 @@ namespace MohawkGame2D
         public void Setup()
         {
             Window.SetTitle("FUBA");
-            Window.SetSize(800, 600);
+            Window.SetSize(600, 800);
         }
 
         /// <summary>
@@ -154,7 +155,7 @@ namespace MohawkGame2D
             Draw.LineSize = 0;
             Draw.FillColor = new ColorF(0.0f, 0f);
             Draw.FillColor = new ColorF(0.0f, hitboxTransparency);
-            Draw.Circle(plrSize.X/2 + plrPosition.X, plrSize.Y/2 + plrPosition.Y, hitboxSize);
+            Draw.Circle(plrSize.X/2 + plrPosition.X + hitboxOffset.X, plrSize.Y/2 + plrPosition.Y + hitboxOffset.Y, hitboxSize);
 
 
             Vector2 faceOffset = new Vector2(-4, -13); // face position
@@ -190,6 +191,8 @@ namespace MohawkGame2D
             bool isPlayerMovingSlow = (Input.IsKeyboardKeyDown(KeyboardInput.LeftShift)) || (Input.IsKeyboardKeyDown(KeyboardInput.RightShift));
             bool isPlayerMoving = false;
             hitboxSize = slowValue;
+            hitboxOffset.X = 0;
+            hitboxOffset.Y = 0;
 
             // vertical accelleration for jumping
             if (isPlayerJumping == true)
@@ -204,9 +207,9 @@ namespace MohawkGame2D
             // horizontal accelleration for moving. balances out because of the speed limit
             if (isPlayerMoving == true)
             {
-                for (int i = 0; i < 8; i++)
+                for (int i = 0; i < 16; i++)
                 {
-                    plrAcceleration.X = i * 40;
+                    plrAcceleration.X = i * 20;
                 }
             }
 
@@ -221,15 +224,17 @@ namespace MohawkGame2D
             if (isPlayerMovingLeft == true)
             {
                 isPlayerMoving = true;
-                plrVelocity.X -= plrAcceleration.X + 120.0f * playerSpeed;
+                plrVelocity.X -= plrAcceleration.X + 150.0f * playerSpeed;
                 plrFace = "<_<";
+                if (isPlayerMovingSlow) hitboxOffset.X = -10;
             }
 
             if (isPlayerMovingRight == true)
             {
                 isPlayerMoving = true;
-                plrVelocity.X += plrAcceleration.X + 120.0f * playerSpeed;
+                plrVelocity.X += plrAcceleration.X + 150.0f * playerSpeed;
                 plrFace = ">_>";
+                if (isPlayerMovingSlow) hitboxOffset.X = 10;
             }
 
             if (!isPlayerMoving)
@@ -240,15 +245,15 @@ namespace MohawkGame2D
 
             if (isPlayerMovingDown == true)
             {
-                if (plrVelocity.Y < 100f)
+                if (plrVelocity.Y < 0f)
                 {
-                    plrVelocity.Y = 100F;
+                    plrVelocity.Y = 100f;
                 }
                 for (int i = 0; i < 15; i++)
                 {
-                    plrVelocity.Y *= 1;
+                    plrVelocity.Y *= 1f;
                 }
-                plrVelocity.Y += 50f;
+                plrVelocity.Y += 40f;
                 plrFace = "u_u";
             }
 
@@ -265,6 +270,7 @@ namespace MohawkGame2D
             if (isPlayerMovingSlow && isPlayerMovingDown)
             {
                 plrFace = "~_~";
+                hitboxOffset.Y = 10;
             }
 
             if (isWallJumpReady == true && isPlayerMovingDown == false && plrVelocity.Y < -50.0f) 
@@ -284,7 +290,7 @@ namespace MohawkGame2D
                     {
                         plrVelocity.X += i * 20;
                     }
-                    plrVelocity.X += 400f + plrAcceleration.X;
+                    plrVelocity.X += 300f + plrAcceleration.X;
                     plrPosition.X += 10f;
                 }
 
@@ -294,7 +300,7 @@ namespace MohawkGame2D
                     {
                         plrVelocity.X -= i * 20;
                     }
-                    plrVelocity.X -= 400f + plrAcceleration.X;
+                    plrVelocity.X -= 300f + plrAcceleration.X;
                     plrPosition.X -= 10f;
                 }
                 if (plrVelocity.Y > 40)
@@ -303,7 +309,7 @@ namespace MohawkGame2D
                     plrVelocity.Y -= 75.0f; // additional boost incase player is moving downwards
                 }
 
-                plrVelocity.Y -= (400.0f + plrAcceleration.Y); // jumping... again
+                plrVelocity.Y -= (500.0f + plrAcceleration.Y); // jumping... again
             }
 
             // regular jumping
@@ -428,6 +434,9 @@ namespace MohawkGame2D
             {
                 Draw.Line(0, y, Window.Width, y);
             }
+
+            int randomx = 0;
+            int randomy = 0;
         }
         void Draw2x2GridLines()
         {
@@ -445,6 +454,9 @@ namespace MohawkGame2D
             {
                 Draw.Line(0, y, Window.Width, y);
             }
+
+            int randomx = 0;
+            int randomy = 0;
         }
 
         void Draw1x1GridLines()
@@ -463,6 +475,8 @@ namespace MohawkGame2D
             {
                 Draw.Line(0, y, Window.Width, y);
             }
+            int randomx = 0;
+            int randomy = 0;
         }
     }
 }

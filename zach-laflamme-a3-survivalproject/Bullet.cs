@@ -8,13 +8,14 @@ namespace MohawkGame2D
 	{
         public Vector2 ballPosition;
         public Vector2 ballVelocity;
-        public int ballSize = 50;
+        public int ballSize = Random.Integer(40, 100);
+        public bool ballHit = false;
 
         float speed = 300.0f;
-        Vector2 gravity = new Vector2(0f, 1.1f);
+        Vector2 gravity = new Vector2(0f, 1f);
         int balR = 255;
         int balG = 0;
-        int balB = 0;
+        int balB = Random.Integer(0, 30);
 
         public void Setup()
 		{
@@ -42,7 +43,6 @@ namespace MohawkGame2D
         }
         void ProcessBallCollisions()
         {
-            bool ballHit = false;
             float topEdge = ballPosition.Y - ballSize;
             float bottomEdge = ballPosition.Y + ballSize;
             float leftEdge = ballPosition.X - ballSize;
