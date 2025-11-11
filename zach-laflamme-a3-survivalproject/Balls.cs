@@ -6,16 +6,20 @@ namespace MohawkGame2D
 {
 	public class Ball
 	{
+        public float fillSize;
         public Vector2 ballPosition;
         public Vector2 ballVelocity;
         public int ballSize = Random.Integer(40, 100);
         public bool ballHit = false;
 
-        float speed = 300.0f;
+        float speed = 350.0f;
         Vector2 gravity = new Vector2(0f, 1f);
         int balR = 255;
         int balG = 0;
-        int balB = Random.Integer(0, 30);
+        int balB = 0;
+
+
+        public float timeElapsed;
 
         public void Setup()
 		{
@@ -24,7 +28,8 @@ namespace MohawkGame2D
 
 		public void Update()
 		{
-			ProcessPhysics();
+            balG += (int)ballVelocity.Y;
+            ProcessPhysics();
             ProcessBallCollisions();
             ProcessBallGravity();
 
@@ -83,12 +88,19 @@ namespace MohawkGame2D
 
         void DrawBall()
 		{
+            timeElapsed += Time.DeltaTime * 2;
             Color ballColour = new Color(balR, balG, balB);
+            fillSize = ballSize;
 
-            Draw.FillColor = ballColour;
-			Draw.LineSize = 2;
+            Draw.LineColor = ballColour;
+            Draw.LineSize = fillSize;
+            Draw.FillColor = new ColorF(0.0f, 0.0f);
+            Draw.Circle(ballPosition, ballSize - fillSize / 2);
+
+            Draw.LineSize = 2;
             Draw.LineColor = Color.Black;
-			Draw.Circle(ballPosition, ballSize);
-		}
+            Draw.FillColor = new ColorF(0.0f, 0.0f);
+            Draw.Circle(ballPosition, ballSize);
+        }
 	}
 }

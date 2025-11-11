@@ -16,8 +16,8 @@ namespace MohawkGame2D
     {
         // Place your variables here:
         Ball[] balls = new Ball[100];
+        Player player = new Player();
         int ballIndex = 0;
-        bool playerMoving = false;
         bool playerGrounded = false;
         bool isPlayerJumping = false;
 
@@ -25,7 +25,7 @@ namespace MohawkGame2D
         bool leftWall;
         bool rightWall;
 
-        float speedLimit = 600;
+        float speedLimit = 500;
         float playerSpeed = 1;
         float slowValue = 20.0f;
 
@@ -33,7 +33,7 @@ namespace MohawkGame2D
 
         Vector2 plrSize = new Vector2(50, 50);
         float hitboxSize = 12.5f;
-        Vector2 hitboxOffset = new Vector2(0,0);
+        Vector2 hitboxOffset = new Vector2(0, 0);
         Vector2 plrPosition = new Vector2(400 - 25, Window.Height - 80);
         Vector2 plrVelocity = new Vector2(0, 0);
         Vector2 plrAcceleration = new Vector2(0, 0);
@@ -59,7 +59,7 @@ namespace MohawkGame2D
         public void Setup()
         {
             Window.SetTitle("FUBA");
-            Window.SetSize(600, 800);
+            Window.SetSize(800, 600);
         }
 
         /// <summary>
@@ -71,22 +71,29 @@ namespace MohawkGame2D
             Draw4x4GridLines();
             Draw2x2GridLines();
             Draw1x1GridLines();
+            DrawCorners();
 
             ProcessInputs();
-            if (gameRunning)
-            {
                 ProcessPlayerGravity();
                 ProcessPlayerCollisions();
                 ProcessPlayerMovement();
 
                 if (Input.IsMouseButtonPressed(MouseInput.Left))
                 {
+                    
                     SpawnBalls(); //test
+
+                    if (balls.Length >= 1)
+                    {
+                        balls[0].timeElapsed = 0;
+                    }
                 }
 
                 DrawPlayer();
-                DrawCorners();
-            }
+                player.Update();
+
+                DrawTimer();
+
 
             // call update on all balls
             for (int i = 0; i < balls.Length; i++)
@@ -99,6 +106,15 @@ namespace MohawkGame2D
 
 
         }
+
+        void DrawTimer()
+        {
+            int timerValue;
+            timerValue = (int)Time.SecondsElapsed;
+            string Timer = $"{timerValue}";
+            Text.Draw(Timer, centerScreen.X, centerScreen.Y);
+        }
+
         void ProcessInputs()
         {
             if (Input.IsKeyboardKeyPressed(KeyboardInput.Escape))
@@ -118,29 +134,28 @@ namespace MohawkGame2D
             plrVelocity += gravity * Time.DeltaTime; // velocity changes because of gravity, position changes because of velocity
             plrPosition += plrVelocity * Time.DeltaTime;
         }
-
         void DrawCorners()
         {
             // corner balls
             Draw.LineSize = 2;
             Draw.LineColor = new ColorF(0.0f, 1f);
             Draw.FillColor = new Color(255, 0, 0);
-            Draw.Circle(0, 0, 50);
+            Draw.Circle(0, 0, 100);
 
             Draw.LineSize = 2;
             Draw.LineColor = new ColorF(0.0f, 1f);
             Draw.FillColor = new Color(255, 0, 0);
-            Draw.Circle(Window.Width, 0, 50);
+            Draw.Circle(Window.Width, 0, 100);
 
             Draw.LineSize = 2;
             Draw.LineColor = new ColorF(0.0f, 1f);
             Draw.FillColor = new Color(255, 0, 0);
-            Draw.Circle(Window.Width, Window.Height, 50);
+            Draw.Circle(Window.Width, Window.Height, 100);
 
             Draw.LineSize = 2;
             Draw.LineColor = new ColorF(0.0f, 1f);
             Draw.FillColor = new Color(255, 0, 0);
-            Draw.Circle(0, Window.Height, 50);
+            Draw.Circle(0, Window.Height, 100);
         }
         void DrawPlayer()
         {
@@ -155,7 +170,7 @@ namespace MohawkGame2D
             Draw.LineSize = 0;
             Draw.FillColor = new ColorF(0.0f, 0f);
             Draw.FillColor = new ColorF(0.0f, hitboxTransparency);
-            Draw.Circle(plrSize.X/2 + plrPosition.X + hitboxOffset.X, plrSize.Y/2 + plrPosition.Y + hitboxOffset.Y, hitboxSize);
+            Draw.Circle(plrSize.X / 2 + plrPosition.X + hitboxOffset.X, plrSize.Y / 2 + plrPosition.Y + hitboxOffset.Y, hitboxSize);
 
 
             Vector2 faceOffset = new Vector2(-4, -13); // face position
@@ -185,9 +200,11 @@ namespace MohawkGame2D
         }
         void ProcessPlayerMovement()
         {
+            Vector2 plrOffset = plrPosition;
             bool isPlayerMovingLeft = (Input.IsKeyboardKeyDown(KeyboardInput.A)) || (Input.IsKeyboardKeyDown(KeyboardInput.Left));
             bool isPlayerMovingRight = (Input.IsKeyboardKeyDown(KeyboardInput.D)) || (Input.IsKeyboardKeyDown(KeyboardInput.Right));
             bool isPlayerMovingDown = (Input.IsKeyboardKeyDown(KeyboardInput.S)) || (Input.IsKeyboardKeyDown(KeyboardInput.Down));
+            bool isPlayerLookingUp = (Input.IsKeyboardKeyDown(KeyboardInput.W)) || (Input.IsKeyboardKeyDown(KeyboardInput.Up));
             bool isPlayerMovingSlow = (Input.IsKeyboardKeyDown(KeyboardInput.LeftShift)) || (Input.IsKeyboardKeyDown(KeyboardInput.RightShift));
             bool isPlayerMoving = false;
             hitboxSize = slowValue;
@@ -199,7 +216,7 @@ namespace MohawkGame2D
             {
                 for (int i = 5; i > 0; i--)
                 {
-                    plrAcceleration.Y = i * 100;
+                    plrAcceleration.Y = i * 120;
                     if (i > 0) isPlayerJumping = false;
                 }
             }
@@ -209,7 +226,7 @@ namespace MohawkGame2D
             {
                 for (int i = 0; i < 16; i++)
                 {
-                    plrAcceleration.X = i * 20;
+                    plrAcceleration.X = i * 15;
                 }
             }
 
@@ -220,13 +237,13 @@ namespace MohawkGame2D
                 isPlayerMovingLeft = false;
                 isPlayerMovingRight = false;
             }
-            
+
             if (isPlayerMovingLeft == true)
             {
                 isPlayerMoving = true;
                 plrVelocity.X -= plrAcceleration.X + 150.0f * playerSpeed;
                 plrFace = "<_<";
-                if (isPlayerMovingSlow) hitboxOffset.X = -10;
+                if (isPlayerMovingSlow) hitboxOffset.X = -12;
             }
 
             if (isPlayerMovingRight == true)
@@ -234,7 +251,7 @@ namespace MohawkGame2D
                 isPlayerMoving = true;
                 plrVelocity.X += plrAcceleration.X + 150.0f * playerSpeed;
                 plrFace = ">_>";
-                if (isPlayerMovingSlow) hitboxOffset.X = 10;
+                if (isPlayerMovingSlow) hitboxOffset.X = 12;
             }
 
             if (!isPlayerMoving)
@@ -257,6 +274,11 @@ namespace MohawkGame2D
                 plrFace = "u_u";
             }
 
+            if (isPlayerLookingUp == true)
+            {
+                plrFace = "9.9";
+            }
+
             if (isPlayerMovingSlow == true)
             {
                 playerSpeed = 0.65f;
@@ -273,7 +295,13 @@ namespace MohawkGame2D
                 hitboxOffset.Y = 10;
             }
 
-            if (isWallJumpReady == true && isPlayerMovingDown == false && plrVelocity.Y < -50.0f) 
+            if (isPlayerMovingSlow && isPlayerLookingUp)
+            {
+                plrFace = "-.-";
+                hitboxOffset.Y = -8;
+            }
+
+            if (isWallJumpReady == true && isPlayerMovingDown == false && plrVelocity.Y < -50.0f)
             {
                 plrVelocity.Y = -50.0f;
             }
@@ -286,7 +314,7 @@ namespace MohawkGame2D
 
                 if (leftWall == true)
                 {
-                    for (int i = 10; i > 0; i--)
+                    for (int i = 12; i > 0; i--)
                     {
                         plrVelocity.X += i * 20;
                     }
@@ -296,7 +324,7 @@ namespace MohawkGame2D
 
                 if (rightWall == true)
                 {
-                    for (int i = 10; i > 0; i--)
+                    for (int i = 12; i > 0; i--)
                     {
                         plrVelocity.X -= i * 20;
                     }
@@ -317,7 +345,11 @@ namespace MohawkGame2D
             {
                 playerGrounded = false;
                 isPlayerJumping = true;
-                plrVelocity.Y -= (610.0f + plrAcceleration.Y); // jumping
+                plrVelocity.Y -= (450.0f + plrAcceleration.Y); // jumping
+            }
+            if (Input.IsKeyboardKeyDown(KeyboardInput.Space) && playerGrounded == false && isWallJumpReady == false)
+            {
+                plrVelocity.Y -= 10.0f;
             }
 
             // player speed limit
@@ -458,7 +490,6 @@ namespace MohawkGame2D
             int randomx = 0;
             int randomy = 0;
         }
-
         void Draw1x1GridLines()
         {
             Draw.LineSize = 1;
