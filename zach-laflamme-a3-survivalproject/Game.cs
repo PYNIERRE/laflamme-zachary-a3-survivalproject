@@ -1,6 +1,9 @@
 ﻿// Include the namespaces (code libraries) you need below.
 using System;
+using System.ComponentModel.Design;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 // The namespace your code is in.
@@ -17,19 +20,32 @@ namespace MohawkGame2D
         bool playerMoving = false;
         bool playerGrounded = false;
         bool isPlayerJumping = false;
+
         bool isWallJumpReady = false;
+        bool leftWall;
+        bool rightWall;
+
+        float speedLimitLimit = 600;
         float speedLimit = 600;
+        float playerSpeed = 1;
+
         Vector2 centerScreen = Window.Size / 2.0f;
 
-        Vector2 plrPosition = new Vector2(400 - 20, 100);
-        Vector2 plrSize = new Vector2(40, 60);
+        Vector2 plrSize = new Vector2(50, 50);
+        Vector2 plrPosition = new Vector2(400 - 25, Window.Height - 80);
         Vector2 plrVelocity = new Vector2(0, 0);
         Vector2 plrAcceleration = new Vector2(0, 0);
 
-        Vector2 gravity = new Vector2(0, 1250);
+        // player colour
+        int plrR = 255;
+        int plrG = 255;
+        int plrB = 255;
+        Color playerColour = new Color(255, 255, 255); // initial colour
 
-        float friction = 0.1f;
-        float elasticity = 0.3f; // added this for the player bouncing off the walls
+        Vector2 gravity = new Vector2(0, 1400);
+
+        float friction = 0.3f;
+        float elasticity = 0f; // added this for the player bouncing off the walls, however it will not be needed
 
         bool gameRunning = false;
 
@@ -48,6 +64,9 @@ namespace MohawkGame2D
         public void Update()
         {
             Window.ClearBackground(Color.White);
+            Draw4x4GridLines();
+            Draw2x2GridLines();
+            Draw1x1GridLines();
 
             ProcessInputs();
             if (gameRunning)
@@ -96,18 +115,44 @@ namespace MohawkGame2D
         }
         void DrawPlayer()
         {
+            Color playerColour = new Color(plrR, plrG, plrB);
             Draw.LineSize = 2;
             Draw.LineColor = Color.Black;
-            Draw.FillColor = Color.White;
+            Draw.FillColor = playerColour;
             Draw.Rectangle(plrPosition, plrSize);
+
+            Vector2 faceoffset = new Vector2(-4, -13); // face position
+            faceoffset -= plrVelocity / 50; // faceoffset 
+
+            Text.Draw("o_o", plrPosition - faceoffset);
+            Text.Size = 25;
+
+            if (plrR < 0) plrR = 0;
+            if (plrG < 0) plrG = 0;
+            if (plrB < 0) plrB = 0;
+
+            if (isWallJumpReady == false)
+            {
+                plrB = 255;
+            }
+            if (isWallJumpReady == true)
+            {
+                plrB = 50;
+            }
+            if (isWallJumpReady == false)
+            {
+                plrB = 255;
+                plrG = 255;
+            }
         }
         void ProcessPlayerMovement()
         {
             bool isPlayerMovingLeft = (Input.IsKeyboardKeyDown(KeyboardInput.A)) || (Input.IsKeyboardKeyDown(KeyboardInput.Left));
             bool isPlayerMovingRight = (Input.IsKeyboardKeyDown(KeyboardInput.D)) || (Input.IsKeyboardKeyDown(KeyboardInput.Right));
             bool isPlayerMovingDown = (Input.IsKeyboardKeyDown(KeyboardInput.S)) || (Input.IsKeyboardKeyDown(KeyboardInput.Down));
+            bool isPlayerMovingSlow = (Input.IsKeyboardKeyDown(KeyboardInput.LeftShift)) || (Input.IsKeyboardKeyDown(KeyboardInput.RightShift));
             bool isPlayerMoving = false;
-            float movementSpeed = 1;
+            bool isPlayerWallJumping = false;
 
             // vertical accelleration for jumping
             if (isPlayerJumping == true)
@@ -115,6 +160,7 @@ namespace MohawkGame2D
                 for (int i = 5; i > 0; i--)
                 {
                     plrAcceleration.Y = i * 100;
+                    if (i > 0) isPlayerJumping = false;
                 }
             }
 
@@ -122,68 +168,108 @@ namespace MohawkGame2D
             {
                 for (int i = 0; i < 8; i++)
                 {
-                    plrAcceleration.X = i * 50;
+                    plrAcceleration.X = i * 40;
                 }
             }
-
-
 
             // directional movement
             if (isPlayerMovingLeft && isPlayerMovingRight)
             {
                 isPlayerMoving = false;
+                isPlayerMovingLeft = false;
+                isPlayerMovingRight = false;
             }
             
             if (isPlayerMovingLeft == true)
             {
                 isPlayerMoving = true;
-                plrVelocity.X -= plrAcceleration.X + 100.0f;
+                plrVelocity.X -= plrAcceleration.X + 100.0f * playerSpeed;
             }
 
             if (isPlayerMovingRight == true)
             {
                 isPlayerMoving = true;
-                plrVelocity.X += plrAcceleration.X + 100.0f;
+                plrVelocity.X += plrAcceleration.X + 100.0f * playerSpeed;
             }
 
             if (isPlayerMovingDown == true)
             {
-                isPlayerMoving = true;
-                if (plrVelocity.Y > 100.0f)
+                if (plrVelocity.Y < 100f)
                 {
-                    plrVelocity.Y = 80.0f;
+                    plrVelocity.Y = 100F;
                 }
-                plrVelocity.Y += 600.0f;
+                for (int i = 0; i < 15; i++)
+                {
+                    plrVelocity.Y *= 1;
+                }
+                plrVelocity.Y += 50f;
             }
+
+            if (isPlayerMovingSlow == true)
+            {
+                playerSpeed = 0.5f;
+                plrVelocity.X *= 0.75f;
+            }
+            if (isPlayerMovingSlow == false)
+            {
+                playerSpeed = 1f;
+            }
+
 
             if (!isPlayerMoving)
             {
                 plrVelocity.X *= 0.9f;
             }
 
-            // jumping
+            // walljumping
             if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && isWallJumpReady == true && playerGrounded == false)
             {
                 isWallJumpReady = false;
-                plrVelocity.Y -= 400.0f; // jumping... again
-                plrVelocity.X *= 2f;
+
+                if (leftWall == true)
+                {
+                    for (int i = 10; i > 0; i--)
+                    {
+                        plrVelocity.X += i * 20;
+                    }
+                    plrVelocity.X += 500f + plrAcceleration.X;
+                    plrPosition.X += 15f;
+                }
+
+                if (rightWall == true)
+                {
+                    for (int i = 10; i > 0; i--)
+                    {
+                        plrVelocity.X -= i * 20;
+                    }
+                    plrVelocity.X -= 500f + plrAcceleration.X;
+                    plrPosition.X -= 15f;
+                }
+                if (plrVelocity.Y > 40)
+                {
+                    plrVelocity.Y = 40;
+                    plrVelocity.Y -= 75.0f; // additional boost incase player is moving downwards
+                }
+
+                plrVelocity.Y -= (400.0f + plrAcceleration.Y); // jumping... again
             }
 
+            // regular jumping
             if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && playerGrounded == true)
             {
                 playerGrounded = false;
                 isPlayerJumping = true;
-                plrVelocity.Y -= (500.0f + plrAcceleration.Y); // jumping
+                plrVelocity.Y -= (610.0f + plrAcceleration.Y); // jumping
             }
 
             // player speed limit
             if (plrVelocity.X > speedLimit)
             {
-                plrVelocity.X = speedLimit;
+                plrVelocity.X = speedLimit + 0.1f * plrVelocity.X;
             }
             if (plrVelocity.X < -speedLimit)
             {
-                plrVelocity.X = -speedLimit;
+                plrVelocity.X = -(speedLimit + 0.1f * -plrVelocity.X);
             }
         }
         void ProcessPlayerCollisions()
@@ -201,14 +287,15 @@ namespace MohawkGame2D
 
             if (bottomEdge > Window.Height)
             {
-                playerGrounded = true;
                 isWallJumpReady = false;
+                playerGrounded = true;
                 plrVelocity.Y *= 0;
                 plrPosition.Y = Window.Height - plrSize.Y;
             }
 
             if (leftEdge < 0)
             {
+                leftWall = true;
                 isWallJumpReady = true;
                 plrVelocity.X *= -0.5f * elasticity;
                 plrPosition.X = 0;
@@ -216,6 +303,7 @@ namespace MohawkGame2D
 
             if (rightEdge > Window.Width)
             {
+                rightWall = true;
                 isWallJumpReady = true;
                 plrVelocity.X *= -0.5f * elasticity;
                 plrPosition.X = Window.Width - plrSize.X;
@@ -226,14 +314,16 @@ namespace MohawkGame2D
                 playerGrounded = false;
             }
 
-            // i have no idea what kind of sorcery is happening here but it works 
-            if (leftEdge > 0 + 20 && leftEdge < centerScreen.X - 50) //walljump parameters with a 20 pixel buffer
+            // i have no idea what kind of sorcery is happening here but it works. my theory is that i swapped the parameters around so hard that the zones now turn off with eachother's seperate zones instead
+            if (leftEdge > 0 + 20 && leftEdge < centerScreen.X - 50)
             {
                 isWallJumpReady = false;
+                leftWall = false;
             }
-            else if (rightEdge < Window.Width - 20 && rightEdge > centerScreen.X + 50) //walljump parameters with a 20 pixel buffer
+            else if (rightEdge < Window.Width - 20 && rightEdge > centerScreen.X + 50)
             {
                 isWallJumpReady = false;
+                rightWall = false;
             }
         }
         void SpawnBullet()
@@ -253,6 +343,58 @@ namespace MohawkGame2D
             bulletIndex++;
 
             if (bulletIndex >= bullets.Length) bulletIndex = 0;
+        }
+        void Draw4x4GridLines()
+        {
+            Draw.LineSize = 3;
+            Draw.LineColor = Color.DarkGray;
+
+            // draw vertical gridlines
+            for (int x = 0; x < Window.Width; x += 100)
+            {
+                Draw.Line(x, 0, x, Window.Height);
+            }
+
+            // draw horizontal gridlines
+            for (int y = 0; y < Window.Height; y += 100)
+            {
+                Draw.Line(0, y, Window.Width, y);
+            }
+        }
+        void Draw2x2GridLines()
+        {
+            Draw.LineSize = 2;
+            Draw.LineColor = Color.LightGray;
+
+            // draw vertical gridlines
+            for (int x = 0; x < Window.Width; x += 50)
+            {
+                Draw.Line(x, 0, x, Window.Height);
+            }
+
+            // draw horizontal gridlines
+            for (int y = 0; y < Window.Height; y += 50)
+            {
+                Draw.Line(0, y, Window.Width, y);
+            }
+        }
+
+        void Draw1x1GridLines()
+        {
+            Draw.LineSize = 1;
+            Draw.LineColor = Color.LightGray;
+
+            // draw vertical gridlines
+            for (int x = 0; x < Window.Width; x += 25)
+            {
+                Draw.Line(x, 0, x, Window.Height);
+            }
+
+            // draw horizontal gridlines
+            for (int y = 0; y < Window.Height; y += 25)
+            {
+                Draw.Line(0, y, Window.Width, y);
+            }
         }
     }
 }
