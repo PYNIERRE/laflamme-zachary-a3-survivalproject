@@ -32,7 +32,7 @@ namespace MohawkGame2D
         Vector2 centerScreen = Window.Size / 2.0f;
 
         Vector2 plrSize = new Vector2(50, 50);
-        float hitboxSize = 15f;
+        float hitboxSize = 12.5f;
         Vector2 plrPosition = new Vector2(400 - 25, Window.Height - 80);
         Vector2 plrVelocity = new Vector2(0, 0);
         Vector2 plrAcceleration = new Vector2(0, 0);
@@ -45,7 +45,7 @@ namespace MohawkGame2D
         float faceTransparency = 1.0f;
         float hitboxTransparency = 0.2f;
 
-        Vector2 gravity = new Vector2(0, 1400);
+        Vector2 gravity = new Vector2(0, 1450);
 
         float friction = 0.3f;
         float elasticity = 0f; // added this for the player bouncing off the walls, however it will not be needed
@@ -84,6 +84,7 @@ namespace MohawkGame2D
                 }
 
                 DrawPlayer();
+                DrawCorners();
             }
 
             // call update on all balls
@@ -115,6 +116,30 @@ namespace MohawkGame2D
         {
             plrVelocity += gravity * Time.DeltaTime; // velocity changes because of gravity, position changes because of velocity
             plrPosition += plrVelocity * Time.DeltaTime;
+        }
+
+        void DrawCorners()
+        {
+            // corner balls
+            Draw.LineSize = 2;
+            Draw.LineColor = new ColorF(0.0f, 1f);
+            Draw.FillColor = new Color(255, 0, 0);
+            Draw.Circle(0, 0, 50);
+
+            Draw.LineSize = 2;
+            Draw.LineColor = new ColorF(0.0f, 1f);
+            Draw.FillColor = new Color(255, 0, 0);
+            Draw.Circle(Window.Width, 0, 50);
+
+            Draw.LineSize = 2;
+            Draw.LineColor = new ColorF(0.0f, 1f);
+            Draw.FillColor = new Color(255, 0, 0);
+            Draw.Circle(Window.Width, Window.Height, 50);
+
+            Draw.LineSize = 2;
+            Draw.LineColor = new ColorF(0.0f, 1f);
+            Draw.FillColor = new Color(255, 0, 0);
+            Draw.Circle(0, Window.Height, 50);
         }
         void DrawPlayer()
         {
@@ -196,14 +221,14 @@ namespace MohawkGame2D
             if (isPlayerMovingLeft == true)
             {
                 isPlayerMoving = true;
-                plrVelocity.X -= plrAcceleration.X + 100.0f * playerSpeed;
+                plrVelocity.X -= plrAcceleration.X + 120.0f * playerSpeed;
                 plrFace = "<_<";
             }
 
             if (isPlayerMovingRight == true)
             {
                 isPlayerMoving = true;
-                plrVelocity.X += plrAcceleration.X + 100.0f * playerSpeed;
+                plrVelocity.X += plrAcceleration.X + 120.0f * playerSpeed;
                 plrFace = ">_>";
             }
 
@@ -224,14 +249,14 @@ namespace MohawkGame2D
                     plrVelocity.Y *= 1;
                 }
                 plrVelocity.Y += 50f;
-                plrFace = ">_<";
+                plrFace = "u_u";
             }
 
             if (isPlayerMovingSlow == true)
             {
-                playerSpeed = 0.5f;
+                playerSpeed = 0.65f;
                 plrVelocity.X *= 0.75f;
-                plrFace = "u_u";
+                plrFace = "-_-";
             }
             if (isPlayerMovingSlow == false)
             {
@@ -239,8 +264,14 @@ namespace MohawkGame2D
             }
             if (isPlayerMovingSlow && isPlayerMovingDown)
             {
-                plrFace = "-_-";
+                plrFace = "~_~";
             }
+
+            if (isWallJumpReady == true && isPlayerMovingDown == false && plrVelocity.Y < -50.0f) 
+            {
+                plrVelocity.Y = -50.0f;
+            }
+            else
 
             // walljumping
             if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && isWallJumpReady == true && playerGrounded == false)
@@ -253,8 +284,8 @@ namespace MohawkGame2D
                     {
                         plrVelocity.X += i * 20;
                     }
-                    plrVelocity.X += 500f + plrAcceleration.X;
-                    plrPosition.X += 15f;
+                    plrVelocity.X += 400f + plrAcceleration.X;
+                    plrPosition.X += 10f;
                 }
 
                 if (rightWall == true)
@@ -263,8 +294,8 @@ namespace MohawkGame2D
                     {
                         plrVelocity.X -= i * 20;
                     }
-                    plrVelocity.X -= 500f + plrAcceleration.X;
-                    plrPosition.X -= 15f;
+                    plrVelocity.X -= 400f + plrAcceleration.X;
+                    plrPosition.X -= 10f;
                 }
                 if (plrVelocity.Y > 40)
                 {
@@ -304,7 +335,7 @@ namespace MohawkGame2D
             {
                 faceTransparency = 1.0f;
                 hitboxTransparency = 0.2f;
-                hitboxSize = 15f;
+                hitboxSize = 12.5f;
             }
         }
         void ProcessPlayerCollisions()
@@ -333,6 +364,7 @@ namespace MohawkGame2D
                 leftWall = true;
                 isWallJumpReady = true;
                 plrVelocity.X *= -0.5f * elasticity;
+                plrVelocity.Y *= 0.5f;
                 plrPosition.X = 0;
             }
 
@@ -341,6 +373,7 @@ namespace MohawkGame2D
                 rightWall = true;
                 isWallJumpReady = true;
                 plrVelocity.X *= -0.5f * elasticity;
+                plrVelocity.Y *= 0.5f;
                 plrPosition.X = Window.Width - plrSize.X;
             }
 

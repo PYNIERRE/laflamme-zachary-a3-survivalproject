@@ -10,8 +10,8 @@ namespace MohawkGame2D
         public Vector2 ballVelocity;
         public int ballSize = 50;
 
-        float speed = 400.0f;
-        Vector2 gravity = new Vector2(0, 1);
+        float speed = 300.0f;
+        Vector2 gravity = new Vector2(0f, 1.1f);
         int balR = 255;
         int balG = 0;
         int balB = 0;
