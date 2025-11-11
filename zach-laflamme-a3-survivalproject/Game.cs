@@ -15,8 +15,8 @@ namespace MohawkGame2D
     public class Game
     {
         // Place your variables here:
-        Bullet[] bullets = new Bullet[100];
-        int bulletIndex = 0;
+        Ball[] balls = new Ball[100];
+        int ballIndex = 0;
         bool playerMoving = false;
         bool playerGrounded = false;
         bool isPlayerJumping = false;
@@ -25,13 +25,14 @@ namespace MohawkGame2D
         bool leftWall;
         bool rightWall;
 
-        float speedLimitLimit = 600;
         float speedLimit = 600;
         float playerSpeed = 1;
+        float slowValue = 20.0f;
 
         Vector2 centerScreen = Window.Size / 2.0f;
 
         Vector2 plrSize = new Vector2(50, 50);
+        float hitboxSize = 15f;
         Vector2 plrPosition = new Vector2(400 - 25, Window.Height - 80);
         Vector2 plrVelocity = new Vector2(0, 0);
         Vector2 plrAcceleration = new Vector2(0, 0);
@@ -40,8 +41,9 @@ namespace MohawkGame2D
         int plrR = 255;
         int plrG = 255;
         int plrB = 255;
-        Color playerColour = new Color(255, 255, 255); // initial colour\
         string plrFace = "0_0";
+        float faceTransparency = 1.0f;
+        float hitboxTransparency = 0.2f;
 
         Vector2 gravity = new Vector2(0, 1400);
 
@@ -55,7 +57,7 @@ namespace MohawkGame2D
         /// </summary>
         public void Setup()
         {
-            Window.SetTitle("Bullet Spawning");
+            Window.SetTitle("FUBA");
             Window.SetSize(800, 600);
         }
 
@@ -78,19 +80,19 @@ namespace MohawkGame2D
 
                 if (Input.IsMouseButtonPressed(MouseInput.Left))
                 {
-                    SpawnBullet(); //test
+                    SpawnBalls(); //test
                 }
 
                 DrawPlayer();
             }
 
-            // call update on all bullets
-            for (int i = 0; i < bullets.Length; i++)
+            // call update on all balls
+            for (int i = 0; i < balls.Length; i++)
             {
-                // skip the bullet in the array if it hasnt been spawned yet
-                if (bullets[i] == null) continue;
+                // skip the ball in the array if it hasnt been spawned yet
+                if (balls[i] == null) continue;
 
-                bullets[i].Update();
+                balls[i].Update();
             }
 
 
@@ -116,17 +118,26 @@ namespace MohawkGame2D
         }
         void DrawPlayer()
         {
+            float bodyColour = 0f;
             Color playerColour = new Color(plrR, plrG, plrB);
+
             Draw.LineSize = 2;
-            Draw.LineColor = Color.Black;
+            Draw.LineColor = new ColorF(bodyColour, 1.0f);
             Draw.FillColor = playerColour;
-            Draw.Rectangle(plrPosition, plrSize);
+            Draw.Rectangle(plrPosition, plrSize); //drawing player rectangle
 
-            Vector2 faceoffset = new Vector2(-4, -13); // face position
-            faceoffset -= plrVelocity / 50; // faceoffset 
+            Draw.LineSize = 0;
+            Draw.FillColor = new ColorF(0.0f, 0f);
+            Draw.FillColor = new ColorF(0.0f, hitboxTransparency);
+            Draw.Circle(plrSize.X/2 + plrPosition.X, plrSize.Y/2 + plrPosition.Y, hitboxSize);
 
-            Text.Draw(plrFace, plrPosition - faceoffset);
+
+            Vector2 faceOffset = new Vector2(-4, -13); // face position
+            faceOffset -= plrVelocity / 50; // faceoffset 
+
+            Text.Draw(plrFace, plrPosition - faceOffset);
             Text.Size = 25;
+            Text.Color = new ColorF(bodyColour, faceTransparency);
 
             if (plrR < 0) plrR = 0;
             if (plrG < 0) plrG = 0;
@@ -153,7 +164,7 @@ namespace MohawkGame2D
             bool isPlayerMovingDown = (Input.IsKeyboardKeyDown(KeyboardInput.S)) || (Input.IsKeyboardKeyDown(KeyboardInput.Down));
             bool isPlayerMovingSlow = (Input.IsKeyboardKeyDown(KeyboardInput.LeftShift)) || (Input.IsKeyboardKeyDown(KeyboardInput.RightShift));
             bool isPlayerMoving = false;
-            bool isPlayerWallJumping = false;
+            hitboxSize = slowValue;
 
             // vertical accelleration for jumping
             if (isPlayerJumping == true)
@@ -220,11 +231,15 @@ namespace MohawkGame2D
             {
                 playerSpeed = 0.5f;
                 plrVelocity.X *= 0.75f;
-                plrFace = "ono";
+                plrFace = "u_u";
             }
             if (isPlayerMovingSlow == false)
             {
                 playerSpeed = 1f;
+            }
+            if (isPlayerMovingSlow && isPlayerMovingDown)
+            {
+                plrFace = "-_-";
             }
 
             // walljumping
@@ -276,6 +291,20 @@ namespace MohawkGame2D
             if (plrVelocity.X < -speedLimit)
             {
                 plrVelocity.X = -(speedLimit + 0.1f * -plrVelocity.X);
+            }
+
+            // slow mode transparency
+            if (isPlayerMovingSlow == true)
+            {
+                faceTransparency = 0.5f;
+                hitboxTransparency = 0.5f;
+                hitboxSize = 7.5f;
+            }
+            else
+            {
+                faceTransparency = 1.0f;
+                hitboxTransparency = 0.2f;
+                hitboxSize = 15f;
             }
         }
         void ProcessPlayerCollisions()
@@ -332,23 +361,23 @@ namespace MohawkGame2D
                 rightWall = false;
             }
         }
-        void SpawnBullet()
+        void SpawnBalls()
         {
             // if this bullet slot is already occupied, don't fire a new bullet / only spawn a new bullet if the current slot is unoccupied
-            if (bullets[bulletIndex] != null) return;
+            if (balls[ballIndex] != null) return;
 
             // when mouse button is pressed, spawn a bullet!
-            Bullet bullet = new Bullet();
+            Ball ball = new Ball();
 
-            bullet.position = centerScreen;
+            ball.ballPosition = centerScreen;
 
             Vector2 centerToMouse = Input.GetMousePosition() - centerScreen;
-            bullet.velocity = Vector2.Normalize(centerToMouse); // normalize takes the same distance and rotation as this vector, and makes the distance 1 px
+            ball.ballVelocity = Vector2.Normalize(centerToMouse); // normalize takes the same distance and rotation as this vector, and makes the distance 1 px
 
-            bullets[bulletIndex] = bullet;
-            bulletIndex++;
+            balls[ballIndex] = ball;
+            ballIndex++;
 
-            if (bulletIndex >= bullets.Length) bulletIndex = 0;
+            if (ballIndex >= balls.Length) ballIndex = 0;
         }
         void Draw4x4GridLines()
         {
