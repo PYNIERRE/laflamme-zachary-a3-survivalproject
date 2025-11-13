@@ -1,7 +1,9 @@
 ﻿// Include the namespaces (code libraries) you need below.
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Numerics;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -15,6 +17,8 @@ namespace MohawkGame2D
     public class Game
     {
         // Place your variables here:
+
+        public bool gameOver = false;
         Ball[] balls = new Ball[100];
         Player player = new Player();
         int ballIndex = 0;
@@ -29,12 +33,13 @@ namespace MohawkGame2D
         float playerSpeed = 1;
         float slowValue = 20.0f;
 
-        Vector2 centerScreen = Window.Size / 2.0f;
+        float centerScreenX = 400;
+        float centerScreenY = 300;
 
         Vector2 plrSize = new Vector2(50, 50);
-        float hitboxSize = 12.5f;
-        Vector2 hitboxOffset = new Vector2(0, 0);
-        Vector2 plrPosition = new Vector2(400 - 25, Window.Height - 80);
+        public float hitboxSize = 12.5f;
+        public Vector2 hitboxOffset = new Vector2(0, 0);
+        public Vector2 plrPosition = new Vector2(400 - 25, Window.Height - 200);
         Vector2 plrVelocity = new Vector2(0, 0);
         Vector2 plrAcceleration = new Vector2(0, 0);
 
@@ -42,7 +47,7 @@ namespace MohawkGame2D
         int plrR = 255;
         int plrG = 255;
         int plrB = 255;
-        string plrFace = "0_0";
+        public string plrFace = "0_0";
         float faceTransparency = 1.0f;
         float hitboxTransparency = 0.2f;
 
@@ -85,7 +90,7 @@ namespace MohawkGame2D
 
                     if (balls.Length >= 1)
                     {
-                        balls[0].timeElapsed = 0;
+                        balls[0].ballTimeElapsed = 0;
                     }
                 }
 
@@ -93,6 +98,7 @@ namespace MohawkGame2D
                 player.Update();
 
                 DrawTimer();
+            GameOver();
 
 
             // call update on all balls
@@ -112,7 +118,7 @@ namespace MohawkGame2D
             int timerValue;
             timerValue = (int)Time.SecondsElapsed;
             string Timer = $"{timerValue}";
-            Text.Draw(Timer, centerScreen.X, centerScreen.Y);
+            Text.Draw(Timer, centerScreenX, centerScreenY);
         }
 
         void ProcessInputs()
@@ -120,7 +126,7 @@ namespace MohawkGame2D
             if (Input.IsKeyboardKeyPressed(KeyboardInput.Escape))
             {
                 // when reset button is pressed, move rectangle back to initial position
-                plrPosition = centerScreen;
+                plrPosition = new Vector2(centerScreenX, centerScreenY);
                 plrVelocity = new Vector2(0, 0);
                 gameRunning = false;
             }
@@ -211,169 +217,176 @@ namespace MohawkGame2D
             hitboxOffset.X = 0;
             hitboxOffset.Y = 0;
 
-            // vertical accelleration for jumping
-            if (isPlayerJumping == true)
+            if (gameOver == false)
             {
-                for (int i = 5; i > 0; i--)
+                // vertical accelleration for jumping
+                if (isPlayerJumping == true)
                 {
-                    plrAcceleration.Y = i * 120;
-                    if (i > 0) isPlayerJumping = false;
-                }
-            }
-
-            // horizontal accelleration for moving. balances out because of the speed limit
-            if (isPlayerMoving == true)
-            {
-                for (int i = 0; i < 16; i++)
-                {
-                    plrAcceleration.X = i * 15;
-                }
-            }
-
-            // directional movement
-            if (isPlayerMovingLeft && isPlayerMovingRight)
-            {
-                isPlayerMoving = false;
-                isPlayerMovingLeft = false;
-                isPlayerMovingRight = false;
-            }
-
-            if (isPlayerMovingLeft == true)
-            {
-                isPlayerMoving = true;
-                plrVelocity.X -= plrAcceleration.X + 150.0f * playerSpeed;
-                plrFace = "<_<";
-                if (isPlayerMovingSlow) hitboxOffset.X = -12;
-            }
-
-            if (isPlayerMovingRight == true)
-            {
-                isPlayerMoving = true;
-                plrVelocity.X += plrAcceleration.X + 150.0f * playerSpeed;
-                plrFace = ">_>";
-                if (isPlayerMovingSlow) hitboxOffset.X = 12;
-            }
-
-            if (!isPlayerMoving)
-            {
-                plrFace = "0_0";
-                plrVelocity.X *= 0.9f;
-            }
-
-            if (isPlayerMovingDown == true)
-            {
-                if (plrVelocity.Y < 0f)
-                {
-                    plrVelocity.Y = 100f;
-                }
-                for (int i = 0; i < 15; i++)
-                {
-                    plrVelocity.Y *= 1f;
-                }
-                plrVelocity.Y += 40f;
-                plrFace = "u_u";
-            }
-
-            if (isPlayerLookingUp == true)
-            {
-                plrFace = "9.9";
-            }
-
-            if (isPlayerMovingSlow == true)
-            {
-                playerSpeed = 0.65f;
-                plrVelocity.X *= 0.75f;
-                plrFace = "-_-";
-            }
-            if (isPlayerMovingSlow == false)
-            {
-                playerSpeed = 1f;
-            }
-            if (isPlayerMovingSlow && isPlayerMovingDown)
-            {
-                plrFace = "~_~";
-                hitboxOffset.Y = 10;
-            }
-
-            if (isPlayerMovingSlow && isPlayerLookingUp)
-            {
-                plrFace = "-.-";
-                hitboxOffset.Y = -8;
-            }
-
-            if (isWallJumpReady == true && isPlayerMovingDown == false && plrVelocity.Y < -50.0f)
-            {
-                plrVelocity.Y = -50.0f;
-            }
-            else
-
-            // walljumping
-            if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && isWallJumpReady == true && playerGrounded == false)
-            {
-                isWallJumpReady = false;
-
-                if (leftWall == true)
-                {
-                    for (int i = 12; i > 0; i--)
+                    for (int i = 5; i > 0; i--)
                     {
-                        plrVelocity.X += i * 20;
+                        plrAcceleration.Y = i * 120;
+                        if (i > 0) isPlayerJumping = false;
                     }
-                    plrVelocity.X += 300f + plrAcceleration.X;
-                    plrPosition.X += 10f;
                 }
 
-                if (rightWall == true)
+                // horizontal accelleration for moving. balances out because of the speed limit
+                if (isPlayerMoving == true)
                 {
-                    for (int i = 12; i > 0; i--)
+                    for (int i = 0; i < 16; i++)
                     {
-                        plrVelocity.X -= i * 20;
+                        plrAcceleration.X = i * 10;
                     }
-                    plrVelocity.X -= 300f + plrAcceleration.X;
-                    plrPosition.X -= 10f;
                 }
-                if (plrVelocity.Y > 40)
+
+                // directional movement
+                if (isPlayerMovingLeft && isPlayerMovingRight)
                 {
-                    plrVelocity.Y = 40;
-                    plrVelocity.Y -= 75.0f; // additional boost incase player is moving downwards
+                    isPlayerMoving = false;
+                    isPlayerMovingLeft = false;
+                    isPlayerMovingRight = false;
                 }
 
-                plrVelocity.Y -= (500.0f + plrAcceleration.Y); // jumping... again
-            }
+                if (isPlayerMovingLeft == true)
+                {
+                    isPlayerMoving = true;
+                    plrVelocity.X -= plrAcceleration.X + 75.0f * playerSpeed;
+                    plrFace = "<_<";
+                    if (isPlayerMovingSlow) hitboxOffset.X = -12;
+                }
 
-            // regular jumping
-            if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && playerGrounded == true)
-            {
-                playerGrounded = false;
-                isPlayerJumping = true;
-                plrVelocity.Y -= (450.0f + plrAcceleration.Y); // jumping
-            }
-            if (Input.IsKeyboardKeyDown(KeyboardInput.Space) && playerGrounded == false && isWallJumpReady == false)
-            {
-                plrVelocity.Y -= 10.0f;
-            }
+                if (isPlayerMovingRight == true)
+                {
+                    isPlayerMoving = true;
+                    plrVelocity.X += plrAcceleration.X + 75.0f * playerSpeed;
+                    plrFace = ">_>";
+                    if (isPlayerMovingSlow) hitboxOffset.X = 12;
+                }
 
-            // player speed limit
-            if (plrVelocity.X > speedLimit)
-            {
-                plrVelocity.X = speedLimit + 0.1f * plrVelocity.X;
-            }
-            if (plrVelocity.X < -speedLimit)
-            {
-                plrVelocity.X = -(speedLimit + 0.1f * -plrVelocity.X);
-            }
+                if (!isPlayerMoving)
+                {
+                    plrFace = "0_0";
+                    plrVelocity.X *= 0.9f;
+                }
 
-            // slow mode transparency
-            if (isPlayerMovingSlow == true)
-            {
-                faceTransparency = 0.5f;
-                hitboxTransparency = 0.5f;
-                hitboxSize = 7.5f;
-            }
-            else
-            {
-                faceTransparency = 1.0f;
-                hitboxTransparency = 0.2f;
-                hitboxSize = 12.5f;
+                if (isPlayerMovingDown == true)
+                {
+                    if (plrVelocity.Y < 0f)
+                    {
+                        plrVelocity.Y = 100f;
+                    }
+                    for (int i = 0; i < 15; i++)
+                    {
+                        plrVelocity.Y *= 1f;
+                    }
+                    plrVelocity.Y += 40f;
+                    plrFace = "u_u";
+                }
+
+                if (isPlayerLookingUp == true)
+                {
+                    plrFace = "9.9";
+                }
+
+                if (isPlayerMovingSlow == true)
+                {
+                    playerSpeed = 0.65f;
+                    plrVelocity.X *= 0.75f;
+                    plrFace = "-_-";
+                }
+                if (isPlayerMovingSlow == false)
+                {
+                    playerSpeed = 1f;
+                }
+                if (isPlayerMovingSlow && isPlayerMovingDown)
+                {
+                    plrFace = "~_~";
+                    hitboxOffset.Y = 10;
+                }
+
+                if (isPlayerMovingSlow && isPlayerLookingUp)
+                {
+                    plrFace = "-.-";
+                    hitboxOffset.Y = -8;
+                }
+
+                if (isWallJumpReady == true && isPlayerMovingDown == false && plrVelocity.Y < -50.0f)
+                {
+                    plrVelocity.Y = -50.0f;
+                }
+
+                // walljumping
+                if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && isWallJumpReady == true && playerGrounded == false)
+                {
+                    isWallJumpReady = false;
+
+                    if (leftWall == true)
+                    {
+                        for (int i = 12; i > 0; i--)
+                        {
+                            plrVelocity.X += i * 20;
+                        }
+                        plrVelocity.X += 300f + plrAcceleration.X;
+                        plrPosition.X += 10f;
+                    }
+
+                    if (rightWall == true)
+                    {
+                        for (int i = 12; i > 0; i--)
+                        {
+                            plrVelocity.X -= i * 20;
+                        }
+                        plrVelocity.X -= 300f + plrAcceleration.X;
+                        plrPosition.X -= 10f;
+                    }
+                    if (plrVelocity.Y > 40)
+                    {
+                        plrVelocity.Y = 40;
+                        plrVelocity.Y -= 75.0f; // additional boost incase player is moving downwards
+                    }
+
+                    plrVelocity.Y -= (500.0f + plrAcceleration.Y); // jumping... again
+                }
+
+                // regular jumping
+                if (Input.IsKeyboardKeyPressed(KeyboardInput.Space) && playerGrounded == true)
+                {
+                    playerGrounded = false;
+                    isPlayerJumping = true;
+                    plrVelocity.Y -= (450.0f + plrAcceleration.Y); // jumping
+                }
+                if (Input.IsKeyboardKeyDown(KeyboardInput.Space) && playerGrounded == false && isWallJumpReady == false)
+                {
+                    plrVelocity.Y -= 10.0f;
+                }
+
+                // player speed limit
+                if (plrVelocity.X > speedLimit)
+                {
+                    plrVelocity.X = speedLimit + 0.1f * plrVelocity.X;
+                }
+                if (plrVelocity.X < -speedLimit)
+                {
+                    plrVelocity.X = -(speedLimit + 0.1f * -plrVelocity.X);
+                }
+
+                // slow mode transparency
+                if (isPlayerMovingSlow == true)
+                {
+                    faceTransparency = 0.5f;
+                    hitboxTransparency = 0.5f;
+                    hitboxSize = 7.5f;
+                }
+                else
+                {
+                    faceTransparency = 1.0f;
+                    hitboxTransparency = 0.2f;
+                    hitboxSize = 12.5f;
+                }
+                if (!isPlayerMoving && gameOver && plrVelocity.X > 0 && plrVelocity.Y > 0)
+                {
+                    plrFace = "xox";
+                    plrVelocity.X *= 0.9f;
+                }
             }
         }
         void ProcessPlayerCollisions()
@@ -393,7 +406,8 @@ namespace MohawkGame2D
             {
                 isWallJumpReady = false;
                 playerGrounded = true;
-                plrVelocity.Y *= 0;
+                if (gameOver == true) plrVelocity.Y *= elasticity;
+                if (gameOver == false) plrVelocity.Y *= 0;
                 plrPosition.Y = Window.Height - plrSize.Y;
             }
 
@@ -421,12 +435,12 @@ namespace MohawkGame2D
             }
 
             // i have no idea what kind of sorcery is happening here but it works. my theory is that i swapped the parameters around so hard that the zones now turn off with eachother's seperate zones instead
-            if (leftEdge > 0 + 20 && leftEdge < centerScreen.X - 50)
+            if (leftEdge > 0 + 20 && leftEdge < centerScreenX - 50)
             {
                 isWallJumpReady = false;
                 leftWall = false;
             }
-            else if (rightEdge < Window.Width - 20 && rightEdge > centerScreen.X + 50)
+            else if (rightEdge < Window.Width - 20 && rightEdge > centerScreenX + 50)
             {
                 isWallJumpReady = false;
                 rightWall = false;
@@ -440,9 +454,9 @@ namespace MohawkGame2D
             // when mouse button is pressed, spawn a bullet!
             Ball ball = new Ball();
 
-            ball.ballPosition = centerScreen;
+            ball.ballPosition = new Vector2(centerScreenX, centerScreenY);
 
-            Vector2 centerToMouse = Input.GetMousePosition() - centerScreen;
+            Vector2 centerToMouse = Input.GetMousePosition() - new Vector2(centerScreenX, centerScreenY);
             ball.ballVelocity = Vector2.Normalize(centerToMouse); // normalize takes the same distance and rotation as this vector, and makes the distance 1 px
 
             balls[ballIndex] = ball;
@@ -508,6 +522,17 @@ namespace MohawkGame2D
             }
             int randomx = 0;
             int randomy = 0;
+        }
+
+        void GameOver()
+        {
+            // what happens in the event of a game over
+            if (gameOver == true)
+            {
+                gameRunning = false;
+                plrB = 0;
+                plrG = 0;
+            }
         }
     }
 }
